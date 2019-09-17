@@ -1,6 +1,8 @@
 # -*- coding: UTF-8 -*-
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from mirage import fields
+
 from common.utils.aes_decryptor import Prpcrypt
 from django.utils.translation import gettext as _
 
@@ -468,6 +470,25 @@ class DataMaskingRules(models.Model):
         db_table = 'data_masking_rules'
         verbose_name = u'脱敏规则配置'
         verbose_name_plural = u'脱敏规则配置'
+
+
+class InstanceAccount(models.Model):
+    """
+    实例用户列表
+    """
+    instance = models.ForeignKey(Instance, on_delete=models.CASCADE)
+    user = fields.EncryptedCharField(verbose_name='账号', max_length=32)
+    host = models.CharField(verbose_name='主机', max_length=64)
+    password = fields.EncryptedCharField(max_length=32, blank=True, null=True)
+    remark = models.CharField('备注', max_length=255)
+    sys_time = models.DateTimeField('系统时间修改', auto_now=True)
+
+    class Meta:
+        managed = True
+        db_table = 'instance_account'
+        unique_together = ('instance', 'user', 'host')
+        verbose_name = '实例账号列表'
+        verbose_name_plural = '实例账号列表'
 
 
 class ParamTemplate(models.Model):
