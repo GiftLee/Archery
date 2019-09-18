@@ -32,6 +32,7 @@ INSTALLED_APPS = (
     'sql',
     'sql_api',
     'common',
+    'inspur',
 )
 
 MIDDLEWARE = (
