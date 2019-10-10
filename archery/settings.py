@@ -43,6 +43,7 @@ MIDDLEWARE = (
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'django.middleware.gzip.GZipMiddleware',
     'common.middleware.check_login_middleware.CheckLoginMiddleware',
     'common.middleware.exception_logging_middleware.ExceptionLoggingMiddleware',
 )
