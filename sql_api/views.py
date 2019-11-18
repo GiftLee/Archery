@@ -1,3 +1,4 @@
+# -*- coding: UTF-8 -*-
 import django_q
 import pkg_resources
 import platform
@@ -12,8 +13,12 @@ from django_q.status import Stat
 from django_q.models import Success, Failure
 from django_q.brokers import get_broker
 from django.utils import timezone
+
+from common.utils.aes_decryptor import Prpcrypt
 from common.utils.permission import superuser_required
 import archery
+from sql.models import Instance
+from mirage.tools import Migrator
 
 
 def info(request):
@@ -47,47 +52,60 @@ def debug(request):
     }
 
     # Redis信息
-    redis_conn = get_redis_connection("default")
-    full_redis_info = redis_conn.info()
-    redis_info = {
-        'redis_version': full_redis_info.get('redis_version'),
-        'redis_mode': full_redis_info.get('redis_mode'),
-        'role': full_redis_info.get('role'),
-        'maxmemory_human': full_redis_info.get('maxmemory_human'),
-        'used_memory_human': full_redis_info.get('used_memory_human'),
-    }
+    try:
+        redis_conn = get_redis_connection("default")
+        full_redis_info = redis_conn.info()
+        redis_info = {
+            'redis_version': full_redis_info.get('redis_version'),
+            'redis_mode': full_redis_info.get('redis_mode'),
+            'role': full_redis_info.get('role'),
+            'maxmemory_human': full_redis_info.get('maxmemory_human'),
+            'used_memory_human': full_redis_info.get('used_memory_human'),
+        }
+    except Exception as e:
+        redis_info = f'获取Redis信息报错:{e}'
+        full_redis_info = redis_info
 
     # django_q
-    django_q_version = '.'.join(str(i) for i in django_q.VERSION)
-    broker = get_broker()
-    stats = Stat.get_all(broker=broker)
-    queue_size = broker.queue_size()
-    lock_size = broker.lock_size()
-    if lock_size:
-        queue_size = '{}({})'.format(queue_size, lock_size)
-    q_broker_stats = {
-        'info': broker.info(),
-        'Queued': queue_size,
-        'Success': Success.objects.count(),
-        'Failures': Failure.objects.count(),
-    }
-    q_cluster_stats = []
-    for stat in stats:
-        # format uptime
-        uptime = (timezone.now() - stat.tob).total_seconds()
-        hours, remainder = divmod(uptime, 3600)
-        minutes, seconds = divmod(remainder, 60)
-        uptime = '%d:%02d:%02d' % (hours, minutes, seconds)
-        q_cluster_stats.append({
-            'host': stat.host,
-            'cluster_id': stat.cluster_id,
-            'state': stat.status,
-            'pool': len(stat.workers),
-            'tq': stat.task_q_size,
-            'rq': stat.done_q_size,
-            'rc': stat.reincarnations,
-            'up': uptime
-        })
+    try:
+        django_q_version = '.'.join(str(i) for i in django_q.VERSION)
+        broker = get_broker()
+        stats = Stat.get_all(broker=broker)
+        queue_size = broker.queue_size()
+        lock_size = broker.lock_size()
+        if lock_size:
+            queue_size = '{}({})'.format(queue_size, lock_size)
+        q_broker_stats = {
+            'info': broker.info(),
+            'Queued': queue_size,
+            'Success': Success.objects.count(),
+            'Failures': Failure.objects.count(),
+        }
+        q_cluster_stats = []
+        for stat in stats:
+            # format uptime
+            uptime = (timezone.now() - stat.tob).total_seconds()
+            hours, remainder = divmod(uptime, 3600)
+            minutes, seconds = divmod(remainder, 60)
+            uptime = '%d:%02d:%02d' % (hours, minutes, seconds)
+            q_cluster_stats.append({
+                'host': stat.host,
+                'cluster_id': stat.cluster_id,
+                'state': stat.status,
+                'pool': len(stat.workers),
+                'tq': stat.task_q_size,
+                'rq': stat.done_q_size,
+                'rc': stat.reincarnations,
+                'up': uptime
+            })
+        django_q_info = {
+            'version': django_q_version,
+            'conf': django_q.conf.Conf.conf,
+            'q_cluster_stats': q_cluster_stats if q_cluster_stats else '没有正在运行的集群信息，请检查django_q状态',
+            'q_broker_stats': q_broker_stats
+        }
+    except Exception as e:
+        django_q_info = f'获取django_q信息报错:{e}'
 
     # Inception和goInception信息
     inception_host = sys_config.get('inception_host')
@@ -165,12 +183,7 @@ def debug(request):
         'archery': {
             'version': archery.display_version
         },
-        'django_q': {
-            'version': django_q_version,
-            'conf': django_q.conf.Conf.conf,
-            'q_cluster_stats': q_cluster_stats if q_cluster_stats else '没有正在运行的集群信息，请检查django_q状态',
-            'q_broker_stats': q_broker_stats
-        },
+        'django_q': django_q_info,
         'inception': {
             'enable_inception': sys_config.get('inception'),
             'inception_info': full_inception_info if full else inception_info,
@@ -188,3 +201,25 @@ def debug(request):
         'packages': installed_packages_list
     }
     return JsonResponse(system_info)
+
+
+@superuser_required
+def mirage(request):
+    """迁移加密的Instance数据，保留一定版本后删除"""
+    try:
+        pc = Prpcrypt()
+        mg_user = Migrator(app="sql", model="Instance", field="user")
+        mg_password = Migrator(app="sql", model="Instance", field="password")
+        # 还原密码
+        for ins in Instance.objects.all():
+            # 忽略解密错误的数据(本身为异常数据)
+            try:
+                Instance(pk=ins.pk, password=pc.decrypt(ins.password)).save(update_fields=['password'])
+            except:
+                pass
+        # 使用django-mirage-field重新加密
+        mg_user.encrypt()
+        mg_password.encrypt()
+        return JsonResponse({"msg": "ok"})
+    except Exception as msg:
+        return JsonResponse({"msg": f"{msg}"})
