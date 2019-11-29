@@ -175,10 +175,12 @@ def update1(request):
         result['status'] = 1
         result['msg'] = '页面提交参数可能为空'
         return HttpResponse(json.dumps(result), content_type='application/json')
+    print(sql_content)
     sql_content = sql_content.strip()
+    print(sql_content)
     # 获取用户信息
     user = request.user
-
+     
     # 过滤注释语句和非查询的语句
     sql_content = ''.join(
         map(lambda x: re.compile(r'(^--\s+.*|^/\*.*\*/;\s*$)').sub('', x, count=1),
