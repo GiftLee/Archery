@@ -194,12 +194,12 @@ def update1(request):
 
 
     for sql in sql_list:
-        if re.match(r"^delete|^create|^alter", sql.lower()):
+        if re.match(r"^delete|^create|^alter|^drop", sql.lower()):
             #pass
             continue
         else:
             result['status'] = 1
-            result['msg'] = '仅支持^delete|^create|^alter，请联系管理员！'
+            result['msg'] = '仅支持^delete|^create|^alter|^drop，请联系管理员！'
             return HttpResponse(json.dumps(result), content_type='application/json')
 
     # 按照分号截取第一条有效sql执行
