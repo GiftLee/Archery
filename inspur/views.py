@@ -16,6 +16,7 @@ from inspur.models import UpdateLog
 import simplejson as json
 from common.utils.extend_json_encoder import ExtendJSONEncoder
 from inspur.mysql_exec import mysql_exec
+from sql.models import Users, Instance
 
 logger = logging.getLogger('default')
 
@@ -33,6 +34,9 @@ def sqlupdate1(request):
     context = {'instances': instances}
     database_list = []
     for instance_name in instances:
+         
+            print(type(instance_name))
+            print(instance_name)
             query_engine = get_engine(instance=instance_name)
             db_list = query_engine.get_all_databases().rows
             if dbfiter=='liu':
@@ -175,9 +179,7 @@ def update1(request):
         result['status'] = 1
         result['msg'] = '页面提交参数可能为空'
         return HttpResponse(json.dumps(result), content_type='application/json')
-    print(sql_content)
     sql_content = sql_content.strip()
-    print(sql_content)
     # 获取用户信息
     user = request.user
      
@@ -207,8 +209,8 @@ def update1(request):
 
     sql_log_bin='set sql_log_bin = 0;'
     for sql in sql_list:
-         if re.match(r"^delete|^alter", sql.lower()):
-             sql_content = sql_log_bin + sql_content
+         if re.match(r"^delete|^alter|^drop", sql.lower()):
+             sql_content = sql_log_bin + sql
     try:
         # 查询权限校验
         if re.match(r"^explain", sql_content.lower()):
@@ -224,27 +226,18 @@ def update1(request):
         sql_result={}
         for i in range(len(db_list)):
             t_start = time.time()
-            sql_result = mysql_exec(instance_name=db_list[str(i)]["instance"]).execute(db_list[str(i)]["db"], sql_content)
+            instance_name =Instance.objects.get(instance_name=db_list[str(i)]["instance"])
+            query_engine = get_engine(instance=instance_name)
+            sql_result = query_engine.query(db_list[str(i)]["db"], sql_content)
             t_end = time.time()
             cost_time = "%5s" % "{:.4f}".format(t_end - t_start)
-            if  sql_result:
-                resulttmp['msg']= '实例名'+db_list[str(i)]["instance"]+':数据库名'+db_list[str(i)]["db"]+" 错误信息"+str(sql_result)
-                resulttmp['msg']
-                if 'ok' in result['msg']:
-                    result['msg'][0]=resulttmp['msg']
-                else:
-                    result['msg'].append(resulttmp['msg'])
-
-            if sql_result:
-                sql_result=str(sql_result)
+            if  sql_result.error:
+                exec_result = sql_result.error
+                result = {'status': 1, 'msg': exec_result}
             else:
-                sql_result='ok'
-            updatelog_save(user,db_list[str(i)]["db"],db_list[str(i)]["instance"],sql_content,cost_time,sql_result)
-            result['status'] = 1
-        for i in range(result['msg'].count(' ')):
-            result['msg'].remove('\'')
-        result['data'] = sql_result
-    except Exception as e:
+                exec_result = sql_result.to_dict()
+                result = {'status': 0, 'msg': 'ok', 'rows': exec_result}
+            updatelog_save(user,db_list[str(i)]["db"],db_list[str(i)]["instance"],sql_content,cost_time,result['msg'])
         logger.error(traceback.format_exc())
         result['status'] = 1
         result['msg'] = str(e)

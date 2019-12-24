@@ -27,8 +27,8 @@ class mysql_exec(object):
                     self.conn = MySQLdb.connect(host=self.host, port=self.port, user=self.user, passwd=self.password,
                                                 charset='utf8')
                     self.cursor = self.conn.cursor()
-            except Exception:
-                raise Exception('找不到对应的实例配置信息，请配置')
+            except Exception as e :
+                raise Exception('找不到对应的实例配置信息，请配置' + str(e))
         else:
             self.host = kwargs.get('host', '')
             self.port = kwargs.get('port', 0)
