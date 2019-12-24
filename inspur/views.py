@@ -226,8 +226,11 @@ def update1(request):
         sql_result={}
         for i in range(len(db_list)):
             t_start = time.time()
+            print(db_list[str(i)]["instance"])
             instance_name =Instance.objects.get(instance_name=db_list[str(i)]["instance"])
+            print(type(instance_name))
             query_engine = get_engine(instance=instance_name)
+            print(query_engine)
             sql_result = query_engine.query(db_list[str(i)]["db"], sql_content)
             t_end = time.time()
             cost_time = "%5s" % "{:.4f}".format(t_end - t_start)
@@ -238,6 +241,7 @@ def update1(request):
                 exec_result = sql_result.to_dict()
                 result = {'status': 0, 'msg': 'ok', 'rows': exec_result}
             updatelog_save(user,db_list[str(i)]["db"],db_list[str(i)]["instance"],sql_content,cost_time,result['msg'])
+    except Exception as e:
         logger.error(traceback.format_exc())
         result['status'] = 1
         result['msg'] = str(e)
