@@ -1,2 +1,2 @@
-version = (1, 7, 4)
+version = (1, 7, 7)
 display_version = '.'.join(str(i) for i in version)
