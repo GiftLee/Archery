@@ -55,18 +55,37 @@ def dataxJoblist(request):
 	       datax_job.crate_user
            from
 	       datax_job , sql_instance a , sql_instance b 
-           where read_instance_id= a.id;"""
+           where read_instance_id= a.id
+           and writer_instance_id=b.id;"""
     # print(job_detail)
     # serializers.serialize("json", job_detail)
     # #job_detail = json.loads(job_detail)
+    job_count = DataXJob.objects.all().count()
     cursor = connection.cursor()
     sql_result=cursor.execute(sql,None)
     col_names = [desc[0] for desc in cursor.description]
     print(col_names)
-    result = dictfetchall(cursor)
+    sql_result = dictfetchall(cursor)
+    result = {"total": job_count,"rows": sql_result}
     print(result)
     #result = {dataxJob}
     return HttpResponse(json.dumps(result,cls=ExtendJSONEncoder), content_type='application/json')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 def dictfetchall(cursor):
     "将游标返回的结果保存到一个字典对象中"
