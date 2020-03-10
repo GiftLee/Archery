@@ -9,13 +9,17 @@
                         <i class="fa fa-plus"></i> 新增</a>
 			</div>
     </div>
-    <!-- 表格-->
+    <!-- 表格
     <div class="table-responsive">
-        <table id="job-list" data-toggle="table" class="table table-striped table-hover"
+        <table id="instance-list" data-toggle="table" class="table table-striped table-hover"
                style="table-layout:inherit;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
         </table>
-    </div>
-    
+    </div>-->
+    <div id="tab-content" class="tab-content">
+        <div id="sql_log_result" role="tabpanel" class="tab-pane fade in active table-responsive">
+            <table id="job-list" data-toggle="table" class="table table-condensed"></table>
+        </div>
+    </div>    
 
 {% endblock content %}
 {% block js %}
