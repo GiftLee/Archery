@@ -7,6 +7,8 @@ urlpatterns = [
     path('api/', include(('sql_api.urls', 'sql_api'), namespace="sql_api")),
     path('', include(('sql.urls', 'sql'), namespace="sql")),
     path('', include(('inspur.urls', 'inspur'), namespace="inspur")),
+    path('', include(('dataxweb.urls', 'dataxweb'), namespace="dataxweb")),
+
 ]
 
 handler400 = views.bad_request

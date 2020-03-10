@@ -1,0 +1,305 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="row clearfix">
+        <div class="col-md-14">
+            <div class="panel panel-default">
+
+                <div class="panel-body">
+                    <form id="form-sqladvisor" action="/dataxjob/" method="post" class="form-horizontal" role="form">
+                        {% csrf_token %}
+
+                        <div class="col-md-10 column">
+                        	<div class="form-group">
+								<label class="control-label col-lg-2">任务名称</label>
+                                <div class="col-lg-7">
+									<div>
+										<input type="text" id="job_name" class="form-control input-sm" data-required="true" placeholder="请输入英文">
+									</div><!-- /.col -->
+                                </div>
+							</div>
+                            <div class="form-group">
+								<label class="control-label col-lg-2">任务描述</label>
+									<div class="col-lg-7">
+										<textarea id="description" spellcheck="false" class="form-control" placeholder="任务描述" rows="1" data-required="true"></textarea>
+									</div><!-- /.col -->
+							</div>
+                            <div class="form-group">
+                               <label class="control-label col-lg-2">读取数据库实例</label>
+                               <div class="col-lg-7">
+                                <select id="read_instance_id" name="read_instance_id"
+                                        class="selectpicker show-tick form-control bs-select-hidden"
+                                        data-live-search="true"
+                                        title="请选择读取实例:"
+                                        data-placeholder="请选择读取实例:" required>
+                                    <option value="is-empty" disabled="" selected="selected">请选择读取实例:</option>
+                                </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                            <label class="control-label col-lg-2">读取数据库</label>
+                              <div class="col-lg-7">
+                                <select id="read_database" name="read_database"
+                                        class="form-control selectpicker show-tick bs-select-hidden"
+                                        data-live-search="true"
+                                        title="请选择读取数据库:"
+                                        data-placeholder="请选择读取数据库:" required>
+                                </select>
+                                 </div>
+                            </div>
+                            <div class="form-group">
+								<label class="control-label col-lg-2">查询SQL语句</label>
+								<!--	<div class="col-lg-7">
+										<textarea id="read_sql" spellcheck="false" class="form-control" placeholder="SQL statement that reads data" rows="4" data-required="true"></textarea>
+									</div> /.col -->
+                                    <div class="col-md-7 column">
+                                         <pre id="sql_content_editor" class="ace_editor" style="min-height:100px"></pre>
+                                    </div>
+                                    <span class="col-lg-3">SQL语句里指明数据库</span>
+							</div>    
+                            <div class="form-group">
+                               <label class="control-label col-lg-2">写入数据库实例</label>
+                               <div class="col-lg-7">
+                                <select id="writer_instance_id" name="writer_instance_id"
+                                        class="selectpicker show-tick form-control bs-select-hidden"
+                                        data-live-search="true"
+                                        title="请选择写入实例:"
+                                        data-placeholder="请选择写入实例:" required>
+                                    <option value="is-empty" disabled="" selected="selected">请选择写入实例:</option>
+                                </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                            <label class="control-label col-lg-2">写入数据库</label>
+                              <div class="col-lg-7">
+                                <select id="writer_database" name="writer_database"
+                                        class="form-control selectpicker show-tick bs-select-hidden"
+                                        data-live-search="true"
+                                        title="请选择写入数据库:"
+                                        data-placeholder="请选择写入数据库:" required>
+                                </select>
+                                 </div>
+                            </div>
+							<div class="form-group">
+							    <label class="control-label col-lg-2">写入表的列</label>
+									<div class="col-lg-7">
+										<textarea id="writer_column" spellcheck="false" class="form-control" placeholder="Write columns" rows="6" data-required="true"></textarea>
+									</div><!-- /.col -->
+                                        <span class="col-lg-3">每行一列, "*" 星号代表所有列。</span>
+							</div><!-- /form-group -->                            
+                            <div class="form-group">
+								<label class="control-label col-lg-2">写入数据前执行的SQL语句</label>
+									<div class="col-lg-7">
+										<textarea id="writer_preSql" spellcheck="false" class="form-control" placeholder="SQL statements executed before writing data" rows="3" data-required="true"></textarea>
+									</div><!-- /.col -->
+                                    <span class="col-lg-3">每条SQL语句末尾要带；分号，指明数据库. 如 truncate table `admin-service`.as_user_info; 注意：SQL语句里面不要带分号;</span>
+							</div><!-- /form-group -->   
+                            <div class="form-group">
+								<label class="control-label col-lg-2">写入数据后执行的SQL语句</label>
+									<div class="col-lg-7">
+										<textarea id="writer_postSql" spellcheck="false" class="form-control" placeholder="SQL statements executed after writing data" rows="3" data-required="true"></textarea>
+									</div><!-- /.col -->
+                                    <span class="col-lg-3">每条SQL语句末尾要带；分号。 注意：SQL语句里面不要带分号;</span>
+							</div><!-- /form-group -->
+
+                            <div class="col-md-offset-5">
+                                <div class="form-group">
+                                    <div class="col-lg-10">
+                                        <input id="btn-addjob" type="button" class="btn btn-warning" value="保存任务"/>
+                                    </div>                                    
+                                </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+ 
+    </div>
+{% endblock content %}
+
+{% block js %}
+    {% load static %}
+    <script src="{% static 'ace/ace.js' %}"></script>
+    <script src="{% static 'ace/ext-language_tools.js' %}"></script>
+    <script src="{% static 'ace/mode-mysql.js' %}"></script>
+    <script src="{% static 'ace/theme-github.js' %}"></script>
+    <script src="{% static 'ace/snippets/mysql.js' %}"></script>
+    <script src="{% static 'ace/ace-init.js' %}"></script>
+    <script src="{% static 'dist/js/marked.min.js' %}"></script>
+    <script>
+        //判断页面显示
+        $("#tools").change(function () {
+            //SQLAdvisor
+            if ($("#tools").val() === '1') {
+                $("#div_tuning").hide();
+                $("#div_verbose").show();
+
+            }
+            //SQLTuning
+            else if ($("#tools").val() === '2') {
+                $("#div_tuning").show();
+                $("#div_verbose").hide();
+            }
+            //SOAR
+            else if ($("#tools").val() === '3') {
+                $("#div_tuning").hide();
+                $("#div_verbose").hide();
+            }
+        });
+
+        // 表单校验
+        function sqladvisor_validate() {
+            var result = true;
+            var sqlContent = editor.getValue();
+            var instance_name = $("#instance_name").val();
+            var db_name = $("#db_name").val();
+
+            if (read_sql === null || read_sql.trim() === "") {
+                alert("SQL内容不能为空！");
+                return result = false;
+            } else if (instance_name === null || instance_name === $("#instance_name").attr("data-placeholder")) {
+                alert("请选择实例！");
+                return result = false;
+            } else if (db_name === null || db_name === $("#db_name").attr("data-placeholder")) {
+                alert("请选择数据库！");
+                return result = false;
+            }
+            return result;
+        }
+
+
+        //实例变动获取数据库
+        $("#read_instance_id").change(function () {
+            get_readdb_list()
+        });
+        $("#writer_instance_id").change(function () {
+            get_writerdb_list()
+        });
+        //获取实例数据库
+        function get_readdb_list() {
+            //将数据通过ajax提交给获取db_name
+            $.ajax({
+                type: "get",
+                url: "/instance/instance_resource/",
+                dataType: "json",
+                data: {
+                    instance_name: $("#read_instance_id").val(),
+                    resource_type: "database"
+                },
+                complete: function () {
+                },
+                success: function (data) {
+                    if (data.status === 0) {
+                        var result = data.data;
+                        $("#read_database").empty();
+                        for (var i = 0; i < result.length; i++) {
+                            var name = "<option value=\"" + result[i] + "\">" + result[i] + "</option>";
+                            $("#read_database").append(name);
+                        }
+                        $('#read_database').selectpicker('render');
+                        $('#read_database').selectpicker('refresh');
+
+                    } else {
+                        alert(data.msg);
+                    }
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    alert(errorThrown);
+                }
+            });
+        }
+
+        function get_writerdb_list() {
+            //将数据通过ajax提交给获取db_name
+            $.ajax({
+                type: "get",
+                url: "/instance/instance_resource/",
+                dataType: "json",
+                data: {
+                    instance_name: $("#writer_instance_id").val(),
+                    resource_type: "database"
+                },
+                complete: function () {
+                },
+                success: function (data) {
+                    if (data.status === 0) {
+                        var result = data.data;
+                        $("#writer_database").empty();
+                        for (var i = 0; i < result.length; i++) {
+                            var name = "<option value=\"" + result[i] + "\">" + result[i] + "</option>";
+                            $("#writer_database").append(name);
+                        }
+                        $('#writer_database').selectpicker('render');
+                        $('#writer_database').selectpicker('refresh');
+
+                    } else {
+                        alert(data.msg);
+                    }
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    alert(errorThrown);
+                }
+            });
+        }
+
+
+
+        $(document).ready(function () {
+            //获取用户实例列表
+            $(function () {
+                $.ajax({
+                    type: "get",
+                    url: "/group/user_all_instances/",
+                    dataType: "json",
+                    data: {
+                        
+                    },
+                    success: function (data) {
+                        if (data.status === 0) {
+                            let result = data['data'];
+                            $("#read_instance_id").empty();
+                            for (let i = 0; i < result.length; i++) {
+                                let instance = "<option value=\"" + result[i]['instance_name'] + "\">" + result[i]['instance_name'] + "</option>";
+                                $("#read_instance_id").append(instance);
+                            }
+                            $('#read_instance_id').selectpicker('render');
+                            $('#read_instance_id').selectpicker('refresh');
+                        } else {
+                            alert(data.msg);
+                        }
+                    },
+                    error: function (XMLHttpRequest, textStatus, errorThrown) {
+                        alert(errorThrown);
+                    }
+                });
+            });
+            $(function () {
+                $.ajax({
+                    type: "get",
+                    url: "/group/user_all_instances/",
+                    dataType: "json",
+                    data: {
+                        
+                    },
+                    success: function (data) {
+                        if (data.status === 0) {
+                            let result = data['data'];
+                            $("#writer_instance_id").empty();
+                            for (let i = 0; i < result.length; i++) {
+                                let instance = "<option value=\"" + result[i]['instance_name'] + "\">" + result[i]['instance_name'] + "</option>";
+                                $("#writer_instance_id").append(instance);
+                            }
+                            $('#writer_instance_id').selectpicker('render');
+                            $('#writer_instance_id').selectpicker('refresh');
+                        } else {
+                            alert(data.msg);
+                        }
+                    },
+                    error: function (XMLHttpRequest, textStatus, errorThrown) {
+                        alert(errorThrown);
+                    }
+                });
+            });
+        });
+    </script>
+{% endblock %}

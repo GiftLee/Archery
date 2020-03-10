@@ -33,6 +33,7 @@ INSTALLED_APPS = (
     'sql_api',
     'common',
     'inspur',
+    'dataxweb',
 )
 
 MIDDLEWARE = (
