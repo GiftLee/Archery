@@ -15,14 +15,14 @@ class DataXJob(models.Model):
     writer_instance_id = models.IntegerField(verbose_name='写实例ID')
     writer_database = models.CharField('写数据库名', max_length=255,null=False,blank=True)
     writer_table = models.CharField('写入表名',max_length=255,null=False,blank=True)
-    writer_preSql = models.TextField('写入数据前执行的SQL语句')
-    writer_postSql = models.TextField('写入数据后执行的SQL语句')
+    writer_preSql = models.TextField('写入数据前执行的SQL语句',null=True)
+    writer_postSql = models.TextField('写入数据后执行的SQL语句',null=True)
     create_time = models.DateTimeField(auto_now_add=True,verbose_name="创建时间")
     update_time = models.DateTimeField(auto_now=True,verbose_name="更新时间")
     crate_user = models.CharField('创建人', max_length=100)
 
     def __str__(self):
-        return self.datax_job
+        return self.job_name
 
     class Meta:
         managed = True

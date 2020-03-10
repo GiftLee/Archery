@@ -24,34 +24,54 @@ def addDataxJob(request):
     """
     return render(request, 'adddataxjob.html')
 
+def dataxJob(request):
+    """job管理界面"""
+    return render(request, 'dataxjob.html')
+
+
 def dataxJoblist(request):
     """
     任务明细界面
     """
-       # 获取用户信息
+    # 获取用户信息
     user = request.user
     print(user)
-    search = request.POST.get('search', '')
-    job_detail = DataXJob.objects.all()
-    serializers.serialize("json",job_detail)
-    print(job_detail)
-    job_detail = json.loads(job_detail)
-    result = { "rows": job_detail}
-    # # 查询个人记录，超管查看所有数据s
-    # if user.is_superuser:
-    #     job_detail = DataXJob.objects.all().filter(
-    #       #  Q(sqllog__contains=search) | Q(user_display__contains=search)).count()
-    #     #sql_log_list = UpdateLog.objects.all().filter(
-    #      #   Q(sqllog__contains=search) | Q(user_display__contains=search)).order_by(
-    #      #   '-id')
-    # else:
-    #     sql_log_count = UpdateLog.objects.filter(username=user.username).filter(sqllog__contains=search).count()
-    #     sql_log_list = UpdateLog.objects.filter(username=user.username).filter(sqllog__contains=search).order_by('-id')
-    # # QuerySet 序列化
-    # sql_log_list = serializers.serialize("json", sql_log_list)
-    # sql_log_list = json.loads(sql_log_list)
-    # sql_log = [log_info['fields'] for log_info in sql_log_list]
+    #search = request.POST.get('search', '')
+    #dataxJob = serializers.serialize("json", DataXJob.objects.all())
+    sql = f"""select
+	       datax_job.job_id ,
+	       datax_job.job_name,
+	       datax_job.job_description,
+	       a.instance_name as read_instance,
+	       datax_job.read_database,
+	       datax_job.read_sql,
+	       b.instance_name  as writer_instance,
+	       datax_job.writer_database,
+	       datax_job.writer_table,
+	       datax_job.writer_preSql,
+	       datax_job.writer_postSql,
+	       datax_job.create_time,
+	       datax_job.update_time,
+	       datax_job.crate_user
+           from
+	       datax_job , sql_instance a , sql_instance b 
+           where read_instance_id= a.id;"""
+    # print(job_detail)
+    # serializers.serialize("json", job_detail)
+    # #job_detail = json.loads(job_detail)
+    cursor = connection.cursor()
+    sql_result=cursor.execute(sql,None)
+    col_names = [desc[0] for desc in cursor.description]
+    print(col_names)
+    result = dictfetchall(cursor)
+    print(result)
+    #result = {dataxJob}
+    return HttpResponse(json.dumps(result,cls=ExtendJSONEncoder), content_type='application/json')
 
-    # result = {"total": sql_log_count, "rows": sql_log}
-    # 返回查询结果
-    return HttpResponse(json.dumps(result), content_type='application/json')
+def dictfetchall(cursor):
+    "将游标返回的结果保存到一个字典对象中"
+    desc = cursor.description
+    return [
+    dict(zip([col[0] for col in desc], row))
+    for row in cursor.fetchall()
+    ]
