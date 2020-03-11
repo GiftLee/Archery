@@ -115,7 +115,8 @@ def saveDataxJob(request):
     read_sql = request.Post.get('read_sql')
     writer_instance_id = request.Post.get('writer_instance_id')
     writer_database = request.Post.get('writer_database')
-    writer_column = request.Post.get('writer_column')
+    writer_table = request.Post.get('writer_table')
+    writer_column = request.Post.getlist('writer_column[]')
     writer_preSql = request.Post.get('writer_preSql')
     writer_postSql = request.Post.get('writer_postSql')
 
@@ -126,4 +127,12 @@ def saveDataxJob(request):
     savejob.read_database = read_database
     savejob.writer_instance_id=writer_instance_id
     savejob.writer_database=writer_database
-    savejob.
+    savejob.writer_table=writer_table
+    savejob.writer_preSql=writer_preSql
+    savejob.writer_postSql=writer_postSql
+    savejob.crate_user = request.user
+    try:
+        savejob.save()
+    except:
+        savejob.close()
+        savejob.save()

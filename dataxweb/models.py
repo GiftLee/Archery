@@ -1,5 +1,4 @@
 from django.db import models
-
 from sql.models import Instance
 
 class DataXJob(models.Model):

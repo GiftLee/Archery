@@ -84,7 +84,7 @@
 								<label class="control-label col-lg-2">写入表名</label>
                                 <div class="col-lg-7">
 									<div>
-										<input type="text" id="table_name" class="form-control input-sm" data-required="true" placeholder="请输入英文">
+										<input type="text" id="writer_table" class="form-control input-sm" data-required="true" placeholder="请输入英文">
 									</div><!-- /.col -->
                                 </div>
 							</div>
@@ -158,18 +158,25 @@
         // 表单校验
         function sqladvisor_validate() {
             var result = true;
-            var sqlContent = editor.getValue();
-            var instance_name = $("#instance_name").val();
-            var db_name = $("#db_name").val();
-
+            var read_sql = $("#read_sql").val();
+            var read_instance = $("#read_instance_id").val();
+            var read_database = $("#read_database").val();
+            var writer_instance = $("#writer_instance_id").val();
+            var writer_database = $("#writer_database").val();
             if (read_sql === null || read_sql.trim() === "") {
-                alert("SQL内容不能为空！");
+                alert("读取SQL内容不能为空！");
                 return result = false;
-            } else if (instance_name === null || instance_name === $("#instance_name").attr("data-placeholder")) {
-                alert("请选择实例！");
+            } else if (read_instance === null || read_instance === $("#read_instance_id").attr("data-placeholder")) {
+                alert("请选择读取实例！");
                 return result = false;
-            } else if (db_name === null || db_name === $("#db_name").attr("data-placeholder")) {
-                alert("请选择数据库！");
+            } else if (read_database === null || read_database === $("#read_database").attr("data-placeholder")) {
+                alert("请选择读取数据库！");
+                return result = false;
+            }else if (writer_instance === null || writer_instance === $("#writer_instance_id").attr("data-placeholder")) {
+                alert("请选择写入实例！");
+                return result = false;
+            }else if (writer_database === null || writer_database === $("#writer_database").attr("data-placeholder")) {
+                alert("请选择写入数据库！");
                 return result = false;
             }
             return result;

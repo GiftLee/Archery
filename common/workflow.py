@@ -43,7 +43,7 @@ def lists(request):
     audit_list = workflow_audit.order_by('-audit_id')[offset:limit].values(
         'audit_id', 'workflow_type',
         'workflow_title', 'create_user_display',
-        'create_time', 'current_status',
+        '', 'current_status',
         'audit_auth_groups',
         'current_audit',
         'group_name')
