@@ -87,7 +87,11 @@
                             writer_instance: $("#writer_instance").val(),
                         }
                     },
-                columns: [
+                columns: [{
+                        title: '',
+                        field: 'checkbox',
+                        checkbox: true
+                    },
                     {
                         title: 'ID',
                         field: 'job_id'

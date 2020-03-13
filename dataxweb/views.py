@@ -113,8 +113,8 @@ def saveDataxJob(request):
 
     job_name = request.POST.get('job_name')
 
-    print("job_name")
-    print(job_name)
+   
+
     description = request.POST.get('description')
     read_instance_id = request.POST.get('read_instance_id') #前台实例名
    
@@ -129,28 +129,30 @@ def saveDataxJob(request):
     writer_preSql = request.POST.get('writer_preSql')
     writer_postSql = request.POST.get('writer_postSql')
     result = {'status': 0, 'msg': 'ok', 'data': {}}
-
-    print(writer_column)
-    savejob = DataXJob()
-    savejob.job_name = job_name
-    savejob.job_description = description
-    savejob.read_instance_id = read_instance_id
-    savejob.read_database = read_database
-    savejob.read_sql = read_sql
-    savejob.writer_instance_id=writer_instance_id
-    savejob.writer_database=writer_database
-    savejob.writer_table=writer_table
-    savejob.writer_preSql=writer_preSql
-    savejob.writer_postSql=writer_postSql
-    savejob.crate_user = request.user
-    try:
-        savejob.save()
-    except Exception as msg:
-        print("msg")
-        print(msg)
-        connection.close()
-        savejob.save()
-        logger.error(msg)
-        result[msg]=msg
-
-    return HttpResponse(json.dumps(result), content_type='application/json')
+    
+    job = DataXJob.objects.filter(job_name = job_name)
+    if job.exists():
+        result = {'status': 1, 'msg': '任务名称不能重复', 'data': {}}
+        return HttpResponse(json.dumps(result), content_type='application/json')
+    else:
+        print(writer_column)
+        savejob = DataXJob()
+        savejob.job_name = job_name
+        savejob.job_description = description
+        savejob.read_instance_id = read_instance_id
+        savejob.read_database = read_database
+        savejob.read_sql = read_sql
+        savejob.writer_instance_id=writer_instance_id
+        savejob.writer_database=writer_database
+        savejob.writer_table=writer_table
+        savejob.writer_preSql=writer_preSql
+        savejob.writer_postSql=writer_postSql
+        savejob.crate_user = request.user
+        try:
+            savejob.save()
+        except Exception as msg:
+            connection.close()
+            savejob.save()
+            logger.error(msg)
+            result[msg]=msg
+        return HttpResponse(json.dumps(result), content_type='application/json')

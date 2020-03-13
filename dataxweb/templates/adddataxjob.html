@@ -159,24 +159,29 @@
         // 表单校验
         function sqladvisor_validate() {
             var result = true;
-            var read_sql = $("#read_sql").val();
+            var job_name = $("#job_name").val();
             var read_instance = $("#read_instance_id").val();
             var read_database = $("#read_database").val();
+            var read_sql = $("#read_sql").val();            
             var writer_instance = $("#writer_instance_id").val();
             var writer_database = $("#writer_database").val();
-            if (read_sql === null || read_sql.trim() === "") {
-                alert("读取SQL内容不能为空！");
+
+            if  (job_name === null || job_name.trim() === "") {
+                alert("任务名称不能为空");
                 return result = false;
-            } else if (read_instance === null || read_instance === $("#read_instance_id").attr("data-placeholder")) {
+            } else if (read_instance === null ||read_instance.trim() === ""|| read_instance === $("#read_instance_id").attr("data-placeholder")) {
                 alert("请选择读取实例！");
                 return result = false;
-            } else if (read_database === null || read_database === $("#read_database").attr("data-placeholder")) {
+            } else if (read_database === null || read_database.trim() === ""||read_database === $("#read_database").attr("data-placeholder")) {
                 alert("请选择读取数据库！");
                 return result = false;
-            }else if (writer_instance === null || writer_instance === $("#writer_instance_id").attr("data-placeholder")) {
+            } else if (read_sql === null || read_sql.trim() === "") {
+                alert("读取SQL内容不能为空！");
+                return result = false;
+            } else if (writer_instance === null ||writer_instance.trim() === ""|| writer_instance === $("#writer_instance_id").attr("data-placeholder")) {
                 alert("请选择写入实例！");
                 return result = false;
-            }else if (writer_database === null || writer_database === $("#writer_database").attr("data-placeholder")) {
+            }else if (writer_database === null || writer_database.trim() === ""||writer_database === $("#writer_database").attr("data-placeholder")) {
                 alert("请选择写入数据库！");
                 return result = false;
             }
@@ -260,17 +265,15 @@
 
 
 
-        $(document).ready(function () {
-
-                 
-                $("#btn-sqlquery").click(function () {
-                        if (sqladvisor_validate()) {
-                            $('input[type=button]').addClass('disabled');
-                            $('input[type=button]').prop('disabled', true);
-                            get_readdb_list();
+        $(document).ready(function () {              
+            $("#btn-sqlquery").click(function () {
+                if (sqladvisor_validate()) {
+                    $('input[type=button]').addClass('disabled');
+                    $('input[type=button]').prop('disabled', true);
+                    get_readdb_list();
                         }
                     }
-                );
+            );
             //获取用户实例列表
             $(function () {
                 $.ajax({
@@ -328,89 +331,55 @@
             });
         });
 
+        $(document).ready(function() {
+            //表单校验成功后在提交
+            $("#btn-addjob").click(function () {
+                if (sqladvisor_validate()) {
+                    $('input[type=button]').addClass('disabled');
+                    $('input[type=button]').prop('disabled', true);
+                    adddataxjob();
+                    }
+                });
+            function adddataxjob() {
+                var joblist= {
+                job_name : $("#job_name").val(),
+                description:$("#description").val(),
+                read_instance_id:$("#read_instance_id").val(),
+                read_database:$("#read_database").val(),
+                read_sql:$("#read_sql").val(),
+                writer_instance_id:$("#writer_instance_id").val(),
+                writer_database:$("#writer_database").val(),
+                writer_table:$("#writer_table").val(),
+                writer_column:$("#writer_column").val(),
+                writer_preSql:$("#writer_preSql").val(),
+                writer_postSql:$("#writer_postSql").val()
+                };
+                //提交请求
+                $.ajax({
+                    type: "POST",
+                    url: "/savedataxjob/",
+                    dataType: "json",
+                    async: false,
+                    data: joblist,
+                    success: function (data) {
+                        if (data.status === 0) {
+                            alert("保存成功")
+                            window.location.href="/dataxjob/";
+                        } else {
+                            alert(data.msg);
+                        }
+                    },
+                    error: function (XMLHttpRequest, textStatus, errorThrown) {
+                        alert(JSON.stringify(XMLHttpRequest));
+                        alert(errorThrown);
+                    },
+                    complete: function () {
+                        $('input[type=button]').removeClass('disabled');
+                        $('input[type=button]').prop('disabled', false);
+                    }
+            })
+    }})
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-$(function() {
-  $('#btn-addjob').click(function() {
-    {#var d = {};#}
-    {#var t = $('#form-sqladvisor').serializeArray();#}
-    {#$.each(t, function() {#}
-    {#  d[this.name] = this.value;#}
-    {#//{})}#}
-    //{#alert("t")#}
-    //{#alert(t);#}
-    //{#alert(JSON.stringify(d));#}
-    var joblist= {
-    job_name : $("#job_name").val(),
-    description:$("#description").val(),
-    read_instance_id:$("#read_instance_id").val(),
-    read_database:$("#read_database").val(),
-    read_sql:$("#read_sql").val(),
-    writer_instance_id:$("#writer_instance_id").val(),
-    writer_database:$("#writer_database").val(),
-    writer_table:$("#writer_table").val(),
-    writer_column:$("#writer_column").val(),
-    writer_preSql:$("#writer_preSql").val(),
-    writer_postSql:$("#writer_postSql").val()
-
-    };
-     //提交请求
-                        $.ajax({
-                            type: "POST",
-                            url: "/savedataxjob/",
-                            dataType: "json",
-                            async: false,
-                            data: joblist,
-
-                success: function (data) {
-                    alert("保存成功")
-                    window.location.href="/dataxjob/";
-                },
-                 //error: function(data) {
-
-                   //  var data = JSON.stringify(data);
-
- //alert(data.responseText);
- //  },
-                            error: function (XMLHttpRequest, textStatus, errorThrown) {
-                                alert(JSON.stringify(XMLHttpRequest));
-                    alert(errorThrown);
-               }
-                            //complete: function () {
-
-                           //     $('input[type=button]').removeClass('disabled');
-                           //     $('input[type=button]').prop('disabled', false);
-
-                          //  }
-
-
-
-                        })
-                    })
-  })
 
 </script>
 
