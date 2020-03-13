@@ -6,7 +6,7 @@
             <div class="panel panel-default">
 
                 <div class="panel-body">
-                    <form id="form-sqladvisor" action="/dataxjob/" method="post" class="form-horizontal" role="form">
+                    <form id="form-sqladvisor" name="form-sqladvisor" action="/dataxjob/" method="post" class="form-horizontal" role="form">
                         {% csrf_token %}
 
                         <div class="col-md-10 column">
@@ -14,14 +14,14 @@
 								<label class="control-label col-lg-2">任务名称</label>
                                 <div class="col-lg-7">
 									<div>
-										<input type="text" id="job_name" class="form-control input-sm" data-required="true" placeholder="请输入英文">
+										<input type="text" id="job_name" name="job_name" class="form-control input-sm" data-required="true" placeholder="请输入英文">
 									</div><!-- /.col -->
                                 </div>
 							</div>
                             <div class="form-group">
 								<label class="control-label col-lg-2">任务描述</label>
 									<div class="col-lg-7">
-										<textarea id="description" spellcheck="false" class="form-control" placeholder="任务描述" rows="1" data-required="true"></textarea>
+										<textarea id="description" name="description" spellcheck="false" class="form-control" placeholder="任务描述" rows="1" data-required="true"></textarea>
 									</div><!-- /.col -->
 							</div>
                             <div class="form-group">
@@ -50,9 +50,9 @@
                             <div class="form-group">
 								<label class="control-label col-lg-2">查询SQL语句</label>
 									<div class="col-lg-7">
-										<textarea id="read_sql" spellcheck="false" class="form-control" placeholder="SQL statement that reads data" rows="4" data-required="true"></textarea>
+										<textarea id="read_sql" name="read_sql" spellcheck="false" class="form-control" placeholder="SQL statement that reads data" rows="4" data-required="true"></textarea>
 									</div>
-                                 <!--   <div class="col-md-7 column">
+                                   <!-- <div class="col-md-7 column">
                                          <pre id="sql_content_editor" class="ace_editor" style="min-height:100px"></pre>
                                     </div>-->
                                     <span class="col-lg-3">SQL语句里指明数据库</span>
@@ -84,28 +84,28 @@
 								<label class="control-label col-lg-2">写入表名</label>
                                 <div class="col-lg-7">
 									<div>
-										<input type="text" id="writer_table" class="form-control input-sm" data-required="true" placeholder="请输入英文">
+										<input type="text" id="writer_table" name="writer_table" class="form-control input-sm" data-required="true" placeholder="请输入英文">
 									</div><!-- /.col -->
                                 </div>
 							</div>
 							<div class="form-group">
 							    <label class="control-label col-lg-2">写入表的列</label>
 									<div class="col-lg-7">
-										<textarea id="writer_column" spellcheck="false" class="form-control" placeholder="Write columns" rows="6" data-required="true"></textarea>
+										<textarea id="writer_column" name="writer_column" spellcheck="false" class="form-control" placeholder="Write columns" rows="6" data-required="true"></textarea>
 									</div><!-- /.col -->
                                         <span class="col-lg-3">每行一列, "*" 星号代表所有列。</span>
 							</div><!-- /form-group -->                            
                             <div class="form-group">
 								<label class="control-label col-lg-2">写入数据前执行的SQL语句</label>
 									<div class="col-lg-7">
-										<textarea id="writer_preSql" spellcheck="false" class="form-control" placeholder="SQL statements executed before writing data" rows="3" data-required="true"></textarea>
+										<textarea id="writer_preSql" name="writer_preSql" spellcheck="false" class="form-control" placeholder="SQL statements executed before writing data" rows="3" data-required="true"></textarea>
 									</div><!-- /.col -->
                                     <span class="col-lg-3">每条SQL语句末尾要带；分号，指明数据库. 如 truncate table `admin-service`.as_user_info; 注意：SQL语句里面不要带分号;</span>
 							</div><!-- /form-group -->   
                             <div class="form-group">
 								<label class="control-label col-lg-2">写入数据后执行的SQL语句</label>
 									<div class="col-lg-7">
-										<textarea id="writer_postSql" spellcheck="false" class="form-control" placeholder="SQL statements executed after writing data" rows="3" data-required="true"></textarea>
+										<textarea id="writer_postSql" name="writer_postSql" spellcheck="false" class="form-control" placeholder="SQL statements executed after writing data" rows="3" data-required="true"></textarea>
 									</div><!-- /.col -->
                                     <span class="col-lg-3">每条SQL语句末尾要带；分号。 注意：SQL语句里面不要带分号;</span>
 							</div><!-- /form-group -->
@@ -116,6 +116,7 @@
                                         <input id="btn-addjob" type="button" class="btn btn-warning" value="保存任务"/>
                                     </div>                                    
                                 </div>
+                        </div>
                         </div>
                     </form>
                 </div>
@@ -198,7 +199,7 @@
                 url: "/instance/instance_resource/",
                 dataType: "json",
                 data: {
-                    instance_name: $("#read_instance_id").val(),
+                    instance_id: $("#read_instance_id").val(),
                     resource_type: "database"
                 },
                 complete: function () {
@@ -231,7 +232,7 @@
                 url: "/instance/instance_resource/",
                 dataType: "json",
                 data: {
-                    instance_name: $("#writer_instance_id").val(),
+                    instance_id: $("#writer_instance_id").val(),
                     resource_type: "database"
                 },
                 complete: function () {
@@ -260,6 +261,16 @@
 
 
         $(document).ready(function () {
+
+                 
+                $("#btn-sqlquery").click(function () {
+                        if (sqladvisor_validate()) {
+                            $('input[type=button]').addClass('disabled');
+                            $('input[type=button]').prop('disabled', true);
+                            get_readdb_list();
+                        }
+                    }
+                );
             //获取用户实例列表
             $(function () {
                 $.ajax({
@@ -271,10 +282,10 @@
                     },
                     success: function (data) {
                         if (data.status === 0) {
-                            let result = data['data'];
+                            var result = data['data'];
                             $("#read_instance_id").empty();
-                            for (let i = 0; i < result.length; i++) {
-                                let instance = "<option value=\"" + result[i]['instance_name'] + "\">" + result[i]['instance_name'] + "</option>";
+                            for (var i = 0; i < result.length; i++) {
+                                var instance = "<option value=\"" + result[i]['id'] + "\">" + result[i]['instance_name'] + "</option>";
                                 $("#read_instance_id").append(instance);
                             }
                             $('#read_instance_id').selectpicker('render');
@@ -298,10 +309,10 @@
                     },
                     success: function (data) {
                         if (data.status === 0) {
-                            let result = data['data'];
+                            var result = data['data'];
                             $("#writer_instance_id").empty();
-                            for (let i = 0; i < result.length; i++) {
-                                let instance = "<option value=\"" + result[i]['instance_name'] + "\">" + result[i]['instance_name'] + "</option>";
+                            for (var i = 0; i < result.length; i++) {
+                                var instance = "<option value=\"" + result[i]['id'] + "\">" + result[i]['instance_name'] + "</option>";
                                 $("#writer_instance_id").append(instance);
                             }
                             $('#writer_instance_id').selectpicker('render');
@@ -316,5 +327,98 @@
                 });
             });
         });
-    </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+$(function() {
+  $('#btn-addjob').click(function() {
+    {#var d = {};#}
+    {#var t = $('#form-sqladvisor').serializeArray();#}
+    {#$.each(t, function() {#}
+    {#  d[this.name] = this.value;#}
+    {#//{})}#}
+    //{#alert("t")#}
+    //{#alert(t);#}
+    //{#alert(JSON.stringify(d));#}
+    var joblist= {
+    job_name : $("#job_name").val(),
+    description:$("#description").val(),
+    read_instance_id:$("#read_instance_id").val(),
+    read_database:$("#read_database").val(),
+    read_sql:$("#read_sql").val(),
+    writer_instance_id:$("#writer_instance_id").val(),
+    writer_database:$("#writer_database").val(),
+    writer_table:$("#writer_table").val(),
+    writer_column:$("#writer_column").val(),
+    writer_preSql:$("#writer_preSql").val(),
+    writer_postSql:$("#writer_postSql").val()
+
+    };
+     //提交请求
+                        $.ajax({
+                            type: "POST",
+                            url: "/savedataxjob/",
+                            dataType: "json",
+                            async: false,
+                            data: joblist,
+
+                success: function (data) {
+                    alert("保存成功")
+                    window.location.href="/dataxjob/";
+                },
+                 //error: function(data) {
+
+                   //  var data = JSON.stringify(data);
+
+ //alert(data.responseText);
+ //  },
+                            error: function (XMLHttpRequest, textStatus, errorThrown) {
+                                alert(JSON.stringify(XMLHttpRequest));
+                    alert(errorThrown);
+               }
+                            //complete: function () {
+
+                           //     $('input[type=button]').removeClass('disabled');
+                           //     $('input[type=button]').prop('disabled', false);
+
+                          //  }
+
+
+
+                        })
+                    })
+  })
+
+</script>
+
+
+
+
+
+
+
+
 {% endblock %}

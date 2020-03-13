@@ -9,6 +9,7 @@ from django.db import connection
 from django.core import serializers
 from django.http import HttpResponse
 from django.db.models import Q
+from django.forms.models import model_to_dict
 from sql.engines import get_engine
 from sql.utils.resource_group import user_instances
 from dataxweb.models import DataXJob, DataXJobWriterColumn
@@ -108,23 +109,34 @@ def addDataxJob(request):
 
 
 def saveDataxJob(request):
-    job_name = request.Post.get('job_name')
-    description = request.Post.get('description')
-    read_instance_id = request.Post.get('read_instance_id')
-    read_database = request.Post.get('read_database')
-    read_sql = request.Post.get('read_sql')
-    writer_instance_id = request.Post.get('writer_instance_id')
-    writer_database = request.Post.get('writer_database')
-    writer_table = request.Post.get('writer_table')
-    writer_column = request.Post.getlist('writer_column[]')
-    writer_preSql = request.Post.get('writer_preSql')
-    writer_postSql = request.Post.get('writer_postSql')
+    print("request.POST")
 
+    job_name = request.POST.get('job_name')
+
+    print("job_name")
+    print(job_name)
+    description = request.POST.get('description')
+    read_instance_id = request.POST.get('read_instance_id') #前台实例名
+   
+    #read_instance_id = list(Instance.objects.filter(instance_name=read_instance_name).values("id"))[0]['id'] #实例名获取id
+    read_database = request.POST.get('read_database')
+    read_sql = request.POST.get('read_sql')
+    writer_instance_id = request.POST.get('writer_instance_id')
+    #writer_instance_id = list(Instance.objects.filter(instance_name=writer_instance_name).values("id"))[0]['id'] #实例名获取id
+    writer_database = request.POST.get('writer_database')
+    writer_table = request.POST.get('writer_table')
+    writer_column = request.POST.getlist('writer_column[]')
+    writer_preSql = request.POST.get('writer_preSql')
+    writer_postSql = request.POST.get('writer_postSql')
+    result = {'status': 0, 'msg': 'ok', 'data': {}}
+
+    print(writer_column)
     savejob = DataXJob()
     savejob.job_name = job_name
     savejob.job_description = description
     savejob.read_instance_id = read_instance_id
     savejob.read_database = read_database
+    savejob.read_sql = read_sql
     savejob.writer_instance_id=writer_instance_id
     savejob.writer_database=writer_database
     savejob.writer_table=writer_table
@@ -133,6 +145,12 @@ def saveDataxJob(request):
     savejob.crate_user = request.user
     try:
         savejob.save()
-    except:
-        savejob.close()
+    except Exception as msg:
+        print("msg")
+        print(msg)
+        connection.close()
         savejob.save()
+        logger.error(msg)
+        result[msg]=msg
+
+    return HttpResponse(json.dumps(result), content_type='application/json')
