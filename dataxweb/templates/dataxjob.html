@@ -54,8 +54,9 @@
                 cache: false,                       //是否使用缓存，默认为true，所以一般情况下需要设置一下这个属性（*）
                 pagination: true,                   //是否显示分页（*）
                 sortable: true,                     //是否启用排序
-                sortOrder: "asc",                   //排序方式
-                sidePagination: "server",           //分页方式：client客户端分页，server服务端分页（*）
+                sortName: 'update_time',                   //排序字段
+                sortOrder: "desc",                   //排序方式
+                sidePagination: "client",           //分页方式：client客户端分页，server服务端分页（*）
                 pageNumber: 1,                      //初始化加载第一页，默认第一页,并记录
                 pageSize: 14,                     //每页的记录行数（*）
                 pageList: [20, 30, 50, 100],       //可供选择的每页的行数（*）
@@ -72,7 +73,23 @@
                 uniqueId: "job_id",                     //每一行的唯一标识，一般为主键列
                 showToggle: true,                   //是否显示详细视图和列表视图的切换按钮
                 cardView: false,                    //是否显示详细视图
-                detailView: false,                  //是否显示父子表
+                detailView: true,                  //是否显示父子表
+                //格式化详情
+                detailFormatter: function (index, row) {
+                    var html = [];
+                    $.each(row, function (key, value) {
+                        if (key === 'read_sql') {
+                            var sql = window.sqlFormatter.format(value);
+                            //替换所有的换行符
+                            sql = sql.replace(/\r\n/g, "<br>");
+                            sql = sql.replace(/\n/g, "<br>");
+                            //替换所有的空格
+                            sql = sql.replace(/\s/g, "&nbsp;");
+                            html.push('<span>' + sql + '</span>');
+                            }
+                    });
+                    return html.join('');
+                },
                 locale: 'zh-CN',                    //本地化
                 toolbar: "#toolbar",               //指明自定义的toolbar
                 queryParamsType: 'limit',
@@ -94,7 +111,11 @@
                     },
                     {
                         title: 'ID',
-                        field: 'job_id'
+                        field: 'job_id',
+                        sortable: true,
+                        formatter: function (value, row, index) {
+                            return "<a target=\"_blank\" href=\"/jobdetail/" + row.job_id + "\">" + value + "</a>"
+                        }
                     }, {
                         title: '任务名称',
                         field: 'job_name',
@@ -103,16 +124,30 @@
                         field: 'job_description'
                     }, {
                         title: '读取实例',
-                        field: 'read_instance'
+                        field: 'read_instance',
+                        sortable: true
                     }, {
                         title: '读取数据库',
                         field: 'read_database'
                     }, {
                         title: '读取SQL',
-                        field: 'read_sql'
+                        field: 'read_sql',
+                        formatter: function (value, row, index) {
+                            if (value.length > 15) {
+                                var sql = value.substr(0, 15) + '...';
+                                return sql;
+                            } else {
+                                return value
+                            }
+                        }
                     }, {
+                        title: '完整INFO',
+                        field: 'read_sql',
+                        visible: false // 默认不显示
+                    },{
                         title: '写入实例',
-                        field: 'writer_instance'
+                        field: 'writer_instance',
+                        sortable: true
                     }, {
                         title: '写入数据库',
                         field: 'writer_database'
@@ -121,16 +156,18 @@
                         field: 'writer_table'
                     },{
                         title: '写入前sql',
-                        field: 'writer_table'
+                        field: 'writer_preSql'
                     },{
                         title: '写入后sql',
                         field: 'writer_postSql'
                     },{
                         title: '创建时间',
-                        field: 'create_time'
+                        field: 'create_time',
+                        sortable: true
                     },{
                         title: '更新时间',
-                        field: 'create_time'
+                        field: 'update_time',
+                        sortable: true
                     },{
                         title: '创建人',
                         field: 'crate_user'

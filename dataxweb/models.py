@@ -35,7 +35,7 @@ class DataXJobWriterColumn(models.Model):
     写入表的列信息  
     """
     column_name = models.CharField('列名',max_length=100,null=True,blank=True)
-    job_id = models.ForeignKey(DataXJob,on_delete=models.CASCADE)
+    job = models.ForeignKey(DataXJob,on_delete=models.CASCADE)
     create_time = models.DateTimeField(auto_now_add=True,verbose_name="创建时间")
     update_time = models.DateTimeField(auto_now=True,verbose_name="更新时间")
 

@@ -16,6 +16,7 @@ from dataxweb.models import DataXJob, DataXJobWriterColumn
 import simplejson as json
 from common.utils.extend_json_encoder import ExtendJSONEncoder
 from sql.models import Users, Instance
+from django.db import transaction
 # Create your views here.
 logger = logging.getLogger('default')
 
@@ -31,6 +32,11 @@ def dataxJob(request):
 
     return render(request, 'dataxjob.html', {'read_instance': read_instance_name, 'writer_instance': writer_instance_name})
 
+def addDataxJob(request):
+    """
+    任务维护界面
+    """
+    return render(request, 'adddataxjob.html')
 
 def dataxJoblist(request):
     """
@@ -92,6 +98,63 @@ def dataxJoblist(request):
     return HttpResponse(json.dumps(result, cls=ExtendJSONEncoder), content_type='application/json')
 
 
+def saveDataxJob(request):
+    user = request.user
+    job_name = request.POST.get('job_name')
+    description = request.POST.get('description')
+    read_instance_id = request.POST.get('read_instance_id') #前台实例名
+    read_database = request.POST.get('read_database')
+    read_sql = request.POST.get('read_sql')
+    writer_instance_id = request.POST.get('writer_instance_id')
+    writer_database = request.POST.get('writer_database')
+    writer_table = request.POST.get('writer_table')
+    writer_column = request.POST.get('writer_column')
+    writer_preSql = request.POST.get('writer_preSql')
+    writer_postSql = request.POST.get('writer_postSql')
+    result = {'status': 0, 'msg': 'ok', 'data': {}}
+    writer_columns = writer_column.split(',')
+    while '' in writer_columns:
+        writer_columns.remove('')
+    if len(writer_columns) == 0:
+        writer_columns.append('*')
+    # 判断任务名重复
+    job = DataXJob.objects.filter(job_name = job_name)
+    if job.exists():
+        result = {'status': 1, 'msg': '任务名称不能重复', 'data': {}}
+        return HttpResponse(json.dumps(result), content_type='application/json')
+    else:
+        try:
+            with transaction.atomic():        
+
+                savejob = DataXJob()
+                savejob.job_name = job_name
+                savejob.job_description = description
+                savejob.read_instance_id = read_instance_id
+                savejob.read_database = read_database
+                savejob.read_sql = read_sql
+                savejob.writer_instance_id=writer_instance_id
+                savejob.writer_database=writer_database
+                savejob.writer_table=writer_table
+                savejob.writer_preSql=writer_preSql
+                savejob.writer_postSql=writer_postSql
+                savejob.crate_user = user
+                savejob.save()
+                
+                
+                for column in writer_columns:
+                    saveColumn = DataXJobWriterColumn()
+                    saveColumn.job = savejob
+                    saveColumn.column_name = column
+                    saveColumn.save()
+        except Exception as msg:
+                connection.close()
+                logger.error(msg)
+                result[msg]=msg
+        return HttpResponse(json.dumps(result), content_type='application/json')
+
+
+
+
 def dictfetchall(cursor):
     "将游标返回的结果保存到一个字典对象中"
     desc = cursor.description
@@ -99,60 +162,3 @@ def dictfetchall(cursor):
         dict(zip([col[0] for col in desc], row))
         for row in cursor.fetchall()
     ]
-
-
-def addDataxJob(request):
-    """
-    任务维护界面
-    """
-    return render(request, 'adddataxjob.html')
-
-
-def saveDataxJob(request):
-    print("request.POST")
-
-    job_name = request.POST.get('job_name')
-
-   
-
-    description = request.POST.get('description')
-    read_instance_id = request.POST.get('read_instance_id') #前台实例名
-   
-    #read_instance_id = list(Instance.objects.filter(instance_name=read_instance_name).values("id"))[0]['id'] #实例名获取id
-    read_database = request.POST.get('read_database')
-    read_sql = request.POST.get('read_sql')
-    writer_instance_id = request.POST.get('writer_instance_id')
-    #writer_instance_id = list(Instance.objects.filter(instance_name=writer_instance_name).values("id"))[0]['id'] #实例名获取id
-    writer_database = request.POST.get('writer_database')
-    writer_table = request.POST.get('writer_table')
-    writer_column = request.POST.getlist('writer_column[]')
-    writer_preSql = request.POST.get('writer_preSql')
-    writer_postSql = request.POST.get('writer_postSql')
-    result = {'status': 0, 'msg': 'ok', 'data': {}}
-    
-    job = DataXJob.objects.filter(job_name = job_name)
-    if job.exists():
-        result = {'status': 1, 'msg': '任务名称不能重复', 'data': {}}
-        return HttpResponse(json.dumps(result), content_type='application/json')
-    else:
-        print(writer_column)
-        savejob = DataXJob()
-        savejob.job_name = job_name
-        savejob.job_description = description
-        savejob.read_instance_id = read_instance_id
-        savejob.read_database = read_database
-        savejob.read_sql = read_sql
-        savejob.writer_instance_id=writer_instance_id
-        savejob.writer_database=writer_database
-        savejob.writer_table=writer_table
-        savejob.writer_preSql=writer_preSql
-        savejob.writer_postSql=writer_postSql
-        savejob.crate_user = request.user
-        try:
-            savejob.save()
-        except Exception as msg:
-            connection.close()
-            savejob.save()
-            logger.error(msg)
-            result[msg]=msg
-        return HttpResponse(json.dumps(result), content_type='application/json')

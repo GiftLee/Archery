@@ -82,18 +82,21 @@
                             </div>
                             <div class="form-group">
 								<label class="control-label col-lg-2">写入表名</label>
-                                <div class="col-lg-7">
-									<div>
-										<input type="text" id="writer_table" name="writer_table" class="form-control input-sm" data-required="true" placeholder="请输入英文">
-									</div><!-- /.col -->
-                                </div>
+                                 <div class="col-lg-7">
+                                    <select id="writer_table" name="writer_database"
+                                        class="form-control selectpicker show-tick bs-select-hidden"
+                                        data-live-search="true"
+                                        title="请选择写入表名:"
+                                        data-placeholder="请选择写入表名:" required>
+                                    </select>
+                                </div> 
 							</div>
 							<div class="form-group">
 							    <label class="control-label col-lg-2">写入表的列</label>
 									<div class="col-lg-7">
-										<textarea id="writer_column" name="writer_column" spellcheck="false" class="form-control" placeholder="Write columns" rows="6" data-required="true"></textarea>
+										<textarea id="writer_column" name="writer_column" spellcheck="false" class="form-control" placeholder="Write columns" rows="3" data-required="true"></textarea>
 									</div><!-- /.col -->
-                                        <span class="col-lg-3">每行一列, "*" 星号代表所有列。</span>
+                                        <span class="col-lg-3">用","分割每列", "*" 星号代表所有列。</span>
 							</div><!-- /form-group -->                            
                             <div class="form-group">
 								<label class="control-label col-lg-2">写入数据前执行的SQL语句</label>
@@ -165,7 +168,8 @@
             var read_sql = $("#read_sql").val();            
             var writer_instance = $("#writer_instance_id").val();
             var writer_database = $("#writer_database").val();
-
+            var writer_column = $("#writer_column").val();
+            alert(writer_column);
             if  (job_name === null || job_name.trim() === "") {
                 alert("任务名称不能为空");
                 return result = false;
@@ -262,6 +266,48 @@
                 }
             });
         }
+		
+		
+		//模式变更获取表
+        $("#writer_database").change(function () {
+            $("#writer_table").empty();
+            $('#writer_table').selectpicker('render');
+            $('#writer_table').selectpicker('refresh');
+            //获取table
+            $.ajax({
+                type: "get",
+                url: "/instance/instance_resource/",
+                dataType: "json",
+                data: {
+                    instance_id: $("#writer_instance_id").val(),
+                    db_name: $("#writer_database").val(),
+                    schema_name: $("#schema_name").val(),
+                    resource_type: "table"
+                },
+                complete: function () {
+                    $("#writer_database").attr('disabled', false);
+                },
+                success: function (data) {
+                    if (data.status === 0) {
+                        var result = data.data;
+                        for (var i = 0; i < result.length; i++) {
+                            //var name = "<option>" + result[i] + "</option>";
+                            var name = "<option value=\"" + result[i] + "\">" + result[i] + "</option>";
+                            $("#writer_table").append(name);
+                        }
+                        $('#writer_table').selectpicker('render');
+                        $('#writer_table').selectpicker('refresh');
+                        //自动补全提示
+                        //setTablesCompleteData(result)
+                    } else {
+                        alert(data.msg);
+                    }
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    alert(errorThrown);
+                }
+            });
+        });
 
 
 
@@ -342,17 +388,17 @@
                 });
             function adddataxjob() {
                 var joblist= {
-                job_name : $("#job_name").val(),
-                description:$("#description").val(),
-                read_instance_id:$("#read_instance_id").val(),
-                read_database:$("#read_database").val(),
-                read_sql:$("#read_sql").val(),
-                writer_instance_id:$("#writer_instance_id").val(),
-                writer_database:$("#writer_database").val(),
-                writer_table:$("#writer_table").val(),
-                writer_column:$("#writer_column").val(),
-                writer_preSql:$("#writer_preSql").val(),
-                writer_postSql:$("#writer_postSql").val()
+                job_name : $("#job_name").val().trim(),
+                description:$("#description").val().trim(),
+                read_instance_id:$("#read_instance_id").val().trim(),
+                read_database:$("#read_database").val().trim(),
+                read_sql:$("#read_sql").val().trim(),
+                writer_instance_id:$("#writer_instance_id").val().trim(),
+                writer_database:$("#writer_database").val().trim(),
+                writer_table:$("#writer_table").val().trim(),
+                writer_column:$("#writer_column").val().trim(),
+                writer_preSql:$("#writer_preSql").val().trim(),
+                writer_postSql:$("#writer_postSql").val().trim()
                 };
                 //提交请求
                 $.ajax({
