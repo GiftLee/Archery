@@ -8,49 +8,49 @@
                 <div class="panel-body">
                     <form id="form-sqladvisor" name="form-sqladvisor" action="/dataxjob/" method="post" class="form-horizontal" role="form">
                         {% csrf_token %}
-
+                    {% for job_detail in job_detail %}
                         <div class="col-md-10 column">
                         	<div class="form-group">
 								<label class="control-label col-lg-2">任务名称</label>
                                 <div class="col-lg-7">
 									<div>
-										<input type="text" id="job_name" name="job_name" class="form-control input-sm" data-required="true" placeholder="请输入英文">
+										<input type="text" id="job_name" name="job_name" value="{{ job_detail.job_name }}" class="form-control input-sm" data-required="true" placeholder="请输入英文">
 									</div><!-- /.col -->
                                 </div>
 							</div>
                             <div class="form-group">
 								<label class="control-label col-lg-2">任务描述</label>
 									<div class="col-lg-7">
-										<textarea id="description" name="description" spellcheck="false" class="form-control" placeholder="任务描述" rows="1" data-required="true"></textarea>
+										<textarea id="description" name="description" value="{{ job_detail.job_description }}" spellcheck="false" class="form-control" placeholder="任务描述" rows="1" data-required="true"></textarea>
 									</div><!-- /.col -->
 							</div>
                             <div class="form-group">
-                               <label class="control-label col-lg-2">读取数据库实例</label>
-                               <div class="col-lg-7">
+                                <label class="control-label col-lg-2">读取数据库实例</label>
+                                <div class="col-lg-7">                                
                                 <select id="read_instance_id" name="read_instance_id"
-                                        class="selectpicker show-tick form-control bs-select-hidden"
-                                        data-live-search="true"
-                                        title="请选择读取实例:"
-                                        data-placeholder="请选择读取实例:" required>
-                                    <option value="is-empty" disabled="" selected="selected">请选择读取实例:</option>
-                                </select>
+                                        class="selectpicker show-tick form-control bs-select-hidden">
+                                        {% for read in read_instance %}
+                                        <option value="{{ read.id }}"  selected="selected">{{ read.instance_name }}</option>
+                                        {% endfor %}
+                                </select>                                
                                 </div>
                             </div>
                             <div class="form-group">
-                            <label class="control-label col-lg-2">读取数据库</label>
-                              <div class="col-lg-7">
-                                <select id="read_database" name="read_database"
-                                        class="form-control selectpicker show-tick bs-select-hidden"
-                                        data-live-search="true"
-                                        title="请选择读取数据库:"
-                                        data-placeholder="请选择读取数据库:" required>
-                                </select>
-                                 </div>
+                                <label class="control-label col-lg-2">读取数据库</label>
+                                    <div class="col-lg-7">
+                                        <select id="read_database" name="read_database"
+                                                class="form-control selectpicker show-tick bs-select-hidden"
+                                                data-live-search="true"
+                                                title="请选择读取数据库:"
+                                                data-placeholder="请选择读取数据库:" required>
+                                                <option value="{{ job_detail.read_database }}"  selected="selected">{{ job_detail.read_database }}</option>
+                                        </select>
+                                    </div>
                             </div>
                             <div class="form-group">
 								<label class="control-label col-lg-2">查询SQL语句</label>
 									<div class="col-lg-7">
-										<textarea id="read_sql" name="read_sql" spellcheck="false" class="form-control" placeholder="SQL statement that reads data" rows="4" data-required="true"></textarea>
+										<textarea id="read_sql" name="read_sql" value="{{ job_detail.read_sql }}" spellcheck="false" class="form-control" placeholder="SQL statement that reads data" rows="4" data-required="true">{{ job_detail.read_sql }}</textarea>
 									</div>
                                    <!-- <div class="col-md-7 column">
                                          <pre id="sql_content_editor" class="ace_editor" style="min-height:100px"></pre>
@@ -61,11 +61,10 @@
                                <label class="control-label col-lg-2">写入数据库实例</label>
                                <div class="col-lg-7">
                                 <select id="writer_instance_id" name="writer_instance_id"
-                                        class="selectpicker show-tick form-control bs-select-hidden"
-                                        data-live-search="true"
-                                        title="请选择写入实例:"
-                                        data-placeholder="请选择写入实例:" required>
-                                    <option value="is-empty" disabled="" selected="selected">请选择写入实例:</option>
+                                        class="selectpicker show-tick form-control bs-select-hidden">
+                                    {% for writer in writer_instance %}
+                                    <option vvalue="{{ writer.id }}" selected="selected">{{ writer.instance_name }}</option>
+                                    {% endfor %}
                                 </select>
                                 </div>
                             </div>
@@ -77,6 +76,7 @@
                                         data-live-search="true"
                                         title="请选择写入数据库:"
                                         data-placeholder="请选择写入数据库:" required>
+                                        <option value="{{ job_detail.writer_database }}"  selected="selected">{{ job_detail.writer_database }}</option>
                                 </select>
                                  </div>
                             </div>
@@ -88,31 +88,35 @@
                                         data-live-search="true"
                                         title="请选择写入表名:"
                                         data-placeholder="请选择写入表名:" required>
+                                        <option value="{{ job_detail.writer_table }}"  selected="selected">{{ job_detail.writer_table }}</option>
                                     </select>
                                 </div> 
 							</div>
+                            
 							<div class="form-group">
 							    <label class="control-label col-lg-2">写入表的列</label>
 									<div class="col-lg-7">
-										<textarea id="writer_column" name="writer_column" spellcheck="false" class="form-control" placeholder="Write columns" rows="3" data-required="true"></textarea>
-									</div><!-- /.col -->
+                                    {% for writer_column in writer_column %}                                    
+										<textarea id="writer_column" name="writer_column" value="{{ writer_column.column_name }}" spellcheck="false" class="form-control"  rows="3" data-required="true">{{ writer_column.column_name }}</textarea>
+									{% endfor %}
+                                    </div><!-- /.col -->
                                         <span class="col-lg-3">用","分割每列", "*" 星号代表所有列。</span>
 							</div><!-- /form-group -->                            
                             <div class="form-group">
 								<label class="control-label col-lg-2">写入数据前执行的SQL语句</label>
 									<div class="col-lg-7">
-										<textarea id="writer_preSql" name="writer_preSql" spellcheck="false" class="form-control" placeholder="SQL statements executed before writing data" rows="3" data-required="true"></textarea>
+										<textarea id="writer_preSql" name="writer_preSql" value="{{ job_detail.writer_preSql }}" spellcheck="false" class="form-control"  rows="3" data-required="true">{{ job_detail.writer_preSql }}</textarea>
 									</div><!-- /.col -->
                                     <span class="col-lg-3">每条SQL语句末尾要带；分号，指明数据库. 如 truncate table `admin-service`.as_user_info; 注意：SQL语句里面不要带分号;</span>
 							</div><!-- /form-group -->   
                             <div class="form-group">
 								<label class="control-label col-lg-2">写入数据后执行的SQL语句</label>
 									<div class="col-lg-7">
-										<textarea id="writer_postSql" name="writer_postSql" spellcheck="false" class="form-control" placeholder="SQL statements executed after writing data" rows="3" data-required="true"></textarea>
+										<textarea id="writer_postSql" name="writer_postSql" value="{{ job_detail.writer_postSql }}" spellcheck="false" class="form-control"  rows="3" data-required="true">{{ job_detail.writer_postSql }}</textarea>
 									</div><!-- /.col -->
                                     <span class="col-lg-3">每条SQL语句末尾要带；分号。 注意：SQL语句里面不要带分号;</span>
 							</div><!-- /form-group -->
-
+                            {% endfor %}
                             <div class="col-md-offset-5">
                                 <div class="form-group">
                                     <div class="col-lg-10">
@@ -158,7 +162,7 @@
                 $("#div_verbose").hide();
             }
         });
-
+ 
         // 表单校验
         function sqladvisor_validate() {
             var result = true;
@@ -387,6 +391,9 @@
                     }
                 });
             function adddataxjob() {
+                var str=location.href;
+                var args = str.split('/');
+                var job_id = args[args.length-2];
                 var joblist= {
                 job_name : $("#job_name").val().trim(),
                 description:$("#description").val().trim(),
@@ -399,7 +406,8 @@
                 writer_column:$("#writer_column").val().trim(),
                 writer_preSql:$("#writer_preSql").val().trim(),
                 writer_postSql:$("#writer_postSql").val().trim(),
-                operation_type: 'add'
+                operation_type: 'update',
+                job_id:job_id
                 };
                 //提交请求
                 $.ajax({

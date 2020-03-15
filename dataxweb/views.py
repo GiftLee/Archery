@@ -3,7 +3,7 @@ import re
 import time
 import traceback
 import simplejson
-from django.shortcuts import render
+from django.shortcuts import render,get_object_or_404
 from django.contrib.auth.decorators import permission_required
 from django.db import connection
 from django.core import serializers
@@ -32,6 +32,27 @@ def dataxJob(request):
 
     return render(request, 'dataxjob.html', {'read_instance': read_instance_name, 'writer_instance': writer_instance_name})
 
+def jobDetail(request,job_id):
+    """job详细界面"""
+
+    job_detail = DataXJob.objects.filter(job_id=job_id).values("job_name","job_description","read_database",
+        "read_sql","writer_database","writer_table","writer_preSql","writer_postSql")
+    print(job_detail)
+    read_instance_id = DataXJob.objects.filter(job_id=job_id).values("read_instance_id")
+    writer_instance_id = DataXJob.objects.filter(job_id=job_id).values("writer_instance_id")
+    read_instance_name = Instance.objects.filter(
+        id__in=read_instance_id).values("id", "instance_name")
+    print(read_instance_name)
+    writer_instance_name = Instance.objects.filter(
+        id__in=writer_instance_id).values("id", "instance_name")
+    
+    writer_column = DataXJobWriterColumn.objects.filter(job_id=job_id).values("column_name")
+    print(writer_column)
+    
+
+    return render(request, 'jobdetail.html', {'read_instance': read_instance_name, 'writer_column': writer_column,
+        'writer_instance': writer_instance_name,'job_detail': job_detail})    
+
 def addDataxJob(request):
     """
     任务维护界面
@@ -51,15 +72,12 @@ def dataxJoblist(request):
     sql = f"""select
 	datax_job.job_id ,
 	datax_job.job_name,
-	datax_job.job_description,
 	a.instance_name as read_instance,
 	datax_job.read_database,
 	datax_job.read_sql,
 	b.instance_name  as writer_instance,
 	datax_job.writer_database,
 	datax_job.writer_table,
-	datax_job.writer_preSql,
-	datax_job.writer_postSql,
 	datax_job.create_time,
 	datax_job.update_time,
 	datax_job.crate_user
@@ -92,7 +110,6 @@ def dataxJoblist(request):
     job_count = DataXJob.objects.all().count()
     cursor = connection.cursor()
     sql_result = cursor.execute(sql, None)
-    col_names = [desc[0] for desc in cursor.description]
     sql_result = dictfetchall(cursor)
     result = {"total": job_count, "rows": sql_result}
     return HttpResponse(json.dumps(result, cls=ExtendJSONEncoder), content_type='application/json')
@@ -111,45 +128,69 @@ def saveDataxJob(request):
     writer_column = request.POST.get('writer_column')
     writer_preSql = request.POST.get('writer_preSql')
     writer_postSql = request.POST.get('writer_postSql')
+    operation_type = request.POST.get('operation_type')
+    job_id = request.POST.get('job_id')
+    writer_column = writer_column.rstrip(',')
+    print(writer_column)
     result = {'status': 0, 'msg': 'ok', 'data': {}}
-    writer_columns = writer_column.split(',')
-    while '' in writer_columns:
-        writer_columns.remove('')
-    if len(writer_columns) == 0:
-        writer_columns.append('*')
+    # writer_columns = writer_column.split(',')
+    # while '' in writer_columns:
+    #     writer_columns.remove('')
+    # if len(writer_columns) == 0:
+    #     writer_columns.append('*')
+    #判断操作类型
+    if operation_type == 'add':
     # 判断任务名重复
-    job = DataXJob.objects.filter(job_name = job_name)
-    if job.exists():
-        result = {'status': 1, 'msg': '任务名称不能重复', 'data': {}}
-        return HttpResponse(json.dumps(result), content_type='application/json')
-    else:
-        try:
-            with transaction.atomic():        
+        job = DataXJob.objects.filter(job_name = job_name)
+        if job.exists():
+            result = {'status': 1, 'msg': '任务名称不能重复', 'data': {}}
+            return HttpResponse(json.dumps(result), content_type='application/json')
+        else:
+            try:
+                with transaction.atomic():        
 
-                savejob = DataXJob()
-                savejob.job_name = job_name
-                savejob.job_description = description
-                savejob.read_instance_id = read_instance_id
-                savejob.read_database = read_database
-                savejob.read_sql = read_sql
-                savejob.writer_instance_id=writer_instance_id
-                savejob.writer_database=writer_database
-                savejob.writer_table=writer_table
-                savejob.writer_preSql=writer_preSql
-                savejob.writer_postSql=writer_postSql
-                savejob.crate_user = user
-                savejob.save()
-                
-                
-                for column in writer_columns:
+                    savejob = DataXJob()
+                    savejob.job_name = job_name
+                    savejob.job_description = description
+                    savejob.read_instance_id = read_instance_id
+                    savejob.read_database = read_database
+                    savejob.read_sql = read_sql
+                    savejob.writer_instance_id=writer_instance_id
+                    savejob.writer_database=writer_database
+                    savejob.writer_table=writer_table
+                    savejob.writer_preSql=writer_preSql
+                    savejob.writer_postSql=writer_postSql
+                    savejob.crate_user = user.username
+                    savejob.save()
+                    
                     saveColumn = DataXJobWriterColumn()
                     saveColumn.job = savejob
-                    saveColumn.column_name = column
+                    saveColumn.column_name = writer_column
                     saveColumn.save()
+            except Exception as msg:
+                    connection.close()
+                    logger.error(msg)
+                    result[msg]=msg
+            return HttpResponse(json.dumps(result), content_type='application/json')
+    elif  operation_type == 'update':
+        try:
+            with transaction.atomic():
+                jobdata = {'job_name':job_name,'job_description':description,
+                'read_instance_id':read_instance_id,'read_database':read_database,
+                'read_sql': read_sql,'writer_instance_id':writer_instance_id,'writer_database': writer_database,
+                'writer_table': writer_table,'writer_preSql': writer_preSql,'writer_postSql': writer_postSql }        
+                DataXJob.objects.filter(job_id=job_id).update(**jobdata,crate_user=user.username)
+
+                cloumndata = {'column_name':writer_column}
+                DataXJobWriterColumn.objects.filter(job_id=job_id).update(**cloumndata)
+
         except Exception as msg:
                 connection.close()
                 logger.error(msg)
                 result[msg]=msg
+        return HttpResponse(json.dumps(result), content_type='application/json')
+    else: 
+        result = {'status': 1, 'msg': '操作类型不支持', 'data': {}}
         return HttpResponse(json.dumps(result), content_type='application/json')
 
 
