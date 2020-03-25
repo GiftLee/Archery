@@ -1,4 +1,0 @@
-{
-    "python.pythonPath": "/opt/venv4archery/bin/python3",
-    "python.linting.pylintArgs": ["--load-plugins", "pylint_django"]
-}
