@@ -13,4 +13,4 @@ venv
 env
 sonar-project.properties
 .scannerwork
-.vscode/
+.vscode/*
