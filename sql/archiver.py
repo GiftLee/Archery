@@ -111,7 +111,7 @@ def archive_apply(request):
     dest_table_name = request.POST.get('dest_table_name')
     condition = request.POST.get('condition')
     no_delete = True if request.POST.get('no_delete') == 'true' else False
-    sleep = request.POST.get('sleep', 0)
+    sleep = request.POST.get('sleep') or 0
     result = {'status': 0, 'msg': 'ok', 'data': {}}
 
     # 参数校验
@@ -218,7 +218,6 @@ def archive_audit(request):
         context = {'errMsg': msg}
         return render(request, 'error.html', context)
     else:
-
         # 消息通知
         async_task(notify_for_audit, audit_id=audit_id, audit_remark=audit_remark, timeout=60,
                    task_name=f'archive-audit-{archive_id}')
@@ -226,11 +225,25 @@ def archive_audit(request):
     return HttpResponseRedirect(reverse('sql:archive_detail', args=(archive_id,)))
 
 
-def add_archive_task():
-    """添加数据归档异步任务"""
-    # 全部有效归档任务
-    for archive_info in ArchiveConfig.objects.filter(
-            state=True, status=WorkflowDict.workflow_status['audit_success']):
+def add_archive_task(archive_ids=None):
+    """
+    添加数据归档异步任务，仅处理有效归档任务
+    :param archive_ids: 归档任务id列表
+    :return:
+    """
+    archive_ids = archive_ids or []
+    if not isinstance(archive_ids, list):
+        archive_ids = list(archive_ids)
+    # 没有传archive_id代表全部归档任务统一调度
+    if archive_ids:
+        archive_cnf_list = ArchiveConfig.objects.filter(
+            id__in=archive_ids, state=True, status=WorkflowDict.workflow_status['audit_success'])
+    else:
+        archive_cnf_list = ArchiveConfig.objects.filter(
+            state=True, status=WorkflowDict.workflow_status['audit_success'])
+
+    # 添加task任务
+    for archive_info in archive_cnf_list:
         archive_id = archive_info.id
         async_task('sql.archiver.archive',
                    archive_id,
@@ -254,22 +267,23 @@ def archive(archive_id):
 
     # 获取归档表的字符集信息
     s_engine = get_engine(s_ins)
-    db = s_engine.schema_object.databases[src_db_name]
-    tb = db.tables[src_table_name]
-    charset = tb.options['charset'].value
-    if charset is None:
-        charset = db.options['charset'].value
+    s_db = s_engine.schema_object.databases[src_db_name]
+    s_tb = s_db.tables[src_table_name]
+    s_charset = s_tb.options['charset'].value
+    if s_charset is None:
+        s_charset = s_db.options['charset'].value
 
     pt_archiver = PtArchiver()
     # 准备参数
-    source = fr"h={s_ins.host},u={s_ins.user},p={s_ins.password},P={s_ins.port},D={src_db_name},t={src_table_name}"
+    source = fr"h={s_ins.host},u={s_ins.user},p={s_ins.password}," \
+        fr"P={s_ins.port},D={src_db_name},t={src_table_name},A={s_charset}"
     args = {
         "no-version-check": True,
         "source": source,
         "where": condition,
         "progress": 5000,
         "statistics": True,
-        "charset": charset,
+        "charset": 'utf8',
         "limit": 10000,
         "txn-size": 1000,
         "sleep": sleep
@@ -280,21 +294,25 @@ def archive(archive_id):
         d_ins = archive_info.dest_instance
         dest_db_name = archive_info.dest_db_name
         dest_table_name = archive_info.dest_table_name
-        dest = fr"h={d_ins.host},u={d_ins.user},p={d_ins.password},P={d_ins.port},D={dest_db_name},t={dest_table_name}"
+        # 目标表的字符集信息
+        d_engine = get_engine(d_ins)
+        d_db = d_engine.schema_object.databases[dest_db_name]
+        d_tb = d_db.tables[dest_table_name]
+        d_charset = d_tb.options['charset'].value
+        if d_charset is None:
+            d_charset = d_db.options['charset'].value
+        # dest
+        dest = fr"h={d_ins.host},u={d_ins.user},p={d_ins.password},P={d_ins.port}," \
+            fr"D={dest_db_name},t={dest_table_name},A={d_charset}"
         args['dest'] = dest
-        args['bulk-insert'] = True
         if no_delete:
             args['no-delete'] = True
-        else:
-            args['bulk-delete'] = True
     elif mode == 'file':
         output_directory = os.path.join(settings.BASE_DIR, 'downloads/archiver')
         os.makedirs(output_directory, exist_ok=True)
         args['file'] = f'{output_directory}/{s_ins.instance_name}-{src_db_name}-{src_table_name}.txt'
         if no_delete:
             args['no-delete'] = True
-        else:
-            args['bulk-delete'] = True
     elif mode == 'purge':
         args['purge'] = True
 

@@ -4,7 +4,7 @@ from django.contrib.auth.models import AbstractUser
 from mirage import fields
 
 from django.utils.translation import gettext as _
-
+from mirage.crypto import Crypto
 
 class ResourceGroup(models.Model):
     """
@@ -16,6 +16,7 @@ class ResourceGroup(models.Model):
     group_sort = models.IntegerField('排序', default=1)
     group_level = models.IntegerField('层级', default=1)
     ding_webhook = models.CharField('钉钉webhook地址', max_length=255, blank=True)
+    feishu_webhook = models.CharField('飞书webhook地址', max_length=255, blank=True)
     is_deleted = models.IntegerField('是否删除', choices=((0, '否'), (1, '是')), default=0)
     create_time = models.DateTimeField(auto_now_add=True)
     sys_time = models.DateTimeField(auto_now=True)
@@ -35,8 +36,9 @@ class Users(AbstractUser):
     用户信息扩展
     """
     display = models.CharField('显示的中文名', max_length=50, default='')
-    ding_user_id = models.CharField('钉钉UserID', max_length=64, blank=True, null=True)
-    wx_user_id = models.CharField('企业微信UserID', max_length=64, blank=True, null=True)
+    ding_user_id = models.CharField('钉钉UserID', max_length=64, blank=True)
+    wx_user_id = models.CharField('企业微信UserID', max_length=64, blank=True)
+    feishu_open_id = models.CharField('飞书OpenID', max_length=64, blank=True)
     failed_login_count = models.IntegerField('失败计数', default=0)
     last_login_failed_at = models.DateTimeField('上次失败登录时间', blank=True, null=True)
     resource_group = models.ManyToManyField(ResourceGroup, verbose_name='资源组', blank=True)
@@ -87,6 +89,30 @@ DB_TYPE_CHOICES = (
     ('goinception', 'goInception'))
 
 
+class Tunnel(models.Model):
+    """
+    SSH隧道配置
+    """
+    tunnel_name = models.CharField('隧道名称', max_length=50, unique=True)
+    host = models.CharField('隧道连接', max_length=200)
+    port = models.IntegerField('端口', default=0)
+    user = fields.EncryptedCharField(verbose_name='用户名', max_length=200, default='', blank=True, null=True)
+    password = fields.EncryptedCharField(verbose_name='密码', max_length=300, default='', blank=True, null=True)
+    pkey_path = fields.EncryptedCharField(verbose_name='密钥地址', max_length=300, default='', blank=True, null=True)
+    pkey_password = fields.EncryptedCharField(verbose_name='密钥密码', max_length=300, default='', blank=True, null=True)
+    create_time = models.DateTimeField('创建时间', auto_now_add=True)
+    update_time = models.DateTimeField('更新时间', auto_now=True)
+
+    def __str__(self):
+        return self.tunnel_name
+
+    class Meta:
+        managed = True
+        db_table = 'ssh_tunnel'
+        verbose_name = u'隧道配置'
+        verbose_name_plural = u'隧道配置'
+
+
 class Instance(models.Model):
     """
     各个线上实例配置
@@ -104,6 +130,7 @@ class Instance(models.Model):
     sid = models.CharField('Oracle sid', max_length=50, null=True, blank=True)
     resource_group = models.ManyToManyField(ResourceGroup, verbose_name='资源组', blank=True)
     instance_tag = models.ManyToManyField(InstanceTag, verbose_name='实例标签', blank=True)
+    tunnel = models.ForeignKey(Tunnel, blank=True, null=True, on_delete=models.CASCADE, default=None)
     create_time = models.DateTimeField('创建时间', auto_now_add=True)
     update_time = models.DateTimeField('更新时间', auto_now=True)
 
@@ -123,6 +150,7 @@ SQL_WORKFLOW_CHOICES = (
     ('workflow_manreviewing', _('workflow_manreviewing')),
     ('workflow_review_pass', _('workflow_review_pass')),
     ('workflow_timingtask', _('workflow_timingtask')),
+    ('workflow_queuing', _('workflow_queuing')),
     ('workflow_executing', _('workflow_executing')),
     ('workflow_autoreviewwrong', _('workflow_autoreviewwrong')),
     ('workflow_exception', _('workflow_exception')))
@@ -264,9 +292,19 @@ class WorkflowLog(models.Model):
     """
     工作流日志表
     """
+    operation_type_choices = (
+        (0, '提交/待审核'),
+        (1, '审核通过'),
+        (2, '审核不通过'),
+        (3, '审核取消'),
+        (4, '定时执行'),
+        (5, '执行工单'),
+        (6, '执行结束'),
+    )
+
     id = models.AutoField(primary_key=True)
     audit_id = models.IntegerField('工单审批id', db_index=True)
-    operation_type = models.SmallIntegerField('操作类型，0提交/待审核、1审核通过、2审核不通过、3审核取消、4定时、5执行、6执行结束')
+    operation_type = models.SmallIntegerField('操作类型', choices=operation_type_choices)
     operation_type_desc = models.CharField('操作类型描述', max_length=10)
     operation_info = models.CharField('操作信息', max_length=1000)
     operator = models.CharField('操作人', max_length=30)
@@ -568,12 +606,51 @@ class Config(models.Model):
         verbose_name_plural = u'系统配置'
 
 
+# 云服务认证信息配置
+class CloudAccessKey(models.Model):
+    cloud_type_choices = (('aliyun', 'aliyun'),)
+
+    type = models.CharField(max_length=20, default='', choices=cloud_type_choices)
+    key_id = models.CharField(max_length=200)
+    key_secret = models.CharField(max_length=200)
+    remark = models.CharField(max_length=50, default='', blank=True)
+
+    def __init__(self, *args, **kwargs):
+        self.c = Crypto()
+        super().__init__(*args, **kwargs)
+
+    @property
+    def raw_key_id(self):
+        """ 返回明文信息"""
+        return self.c.decrypt(self.key_id)
+
+    @property
+    def raw_key_secret(self):
+        """ 返回明文信息"""
+        return self.c.decrypt(self.key_secret)
+
+    def save(self, *args, **kwargs):
+        self.key_id = self.c.encrypt(self.key_id)
+        self.key_secret = self.c.encrypt(self.key_secret)
+        super(CloudAccessKey, self).save(*args, **kwargs)
+
+    def __str__(self):
+        return f'{self.type}({self.remark})'
+
+    class Meta:
+        managed = True
+        db_table = 'cloud_access_key'
+        verbose_name = u'云服务认证信息配置'
+        verbose_name_plural = u'云服务认证信息配置'
+
+
 class AliyunRdsConfig(models.Model):
     """
     阿里云rds配置信息
     """
     instance = models.OneToOneField(Instance, on_delete=models.CASCADE)
     rds_dbinstanceid = models.CharField('对应阿里云RDS实例ID', max_length=100)
+    ak = models.ForeignKey(CloudAccessKey, on_delete=models.CASCADE)
     is_enable = models.BooleanField('是否启用', default=False)
 
     def __int__(self):
