@@ -17,6 +17,7 @@ class ResourceGroup(models.Model):
     group_level = models.IntegerField('层级', default=1)
     ding_webhook = models.CharField('钉钉webhook地址', max_length=255, blank=True)
     feishu_webhook = models.CharField('飞书webhook地址', max_length=255, blank=True)
+    qywx_webhook = models.CharField('企业微信webhook地址', max_length=255, blank=True)
     is_deleted = models.IntegerField('是否删除', choices=((0, '否'), (1, '是')), default=0)
     create_time = models.DateTimeField(auto_now_add=True)
     sys_time = models.DateTimeField(auto_now=True)
@@ -130,7 +131,7 @@ class Instance(models.Model):
     sid = models.CharField('Oracle sid', max_length=50, null=True, blank=True)
     resource_group = models.ManyToManyField(ResourceGroup, verbose_name='资源组', blank=True)
     instance_tag = models.ManyToManyField(InstanceTag, verbose_name='实例标签', blank=True)
-    tunnel = models.ForeignKey(Tunnel, blank=True, null=True, on_delete=models.CASCADE, default=None)
+    tunnel = models.ForeignKey(Tunnel, verbose_name='连接隧道', blank=True, null=True, on_delete=models.CASCADE, default=None)
     create_time = models.DateTimeField('创建时间', auto_now_add=True)
     update_time = models.DateTimeField('更新时间', auto_now=True)
 
