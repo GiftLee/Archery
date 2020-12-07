@@ -7,8 +7,8 @@
 [![Release](https://img.shields.io/github/release/hhyo/archery.svg)](https://github.com/hhyo/archery/releases/)
 [![codecov](https://codecov.io/gh/hhyo/archery/branch/master/graph/badge.svg)](https://codecov.io/gh/hhyo/archery)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/94e8587e507f4565a1ea5ea21fd94c32)](https://app.codacy.com/app/hhyo/Archery?utm_source=github.com&utm_medium=referral&utm_content=hhyo/Archery&utm_campaign=Badge_Grade_Dashboard)
-[![version](https://img.shields.io/badge/python-3.6.5-blue.svg)](https://www.python.org/downloads/release/python-365/)
-[![version](https://img.shields.io/badge/django-2.2-brightgreen.svg)](https://docs.djangoproject.com/zh-hans/2.2/)
+[![version](https://img.shields.io/pypi/pyversions/django)](https://img.shields.io/pypi/pyversions/django/)
+[![version](https://img.shields.io/badge/django-3.1-brightgreen.svg)](https://docs.djangoproject.com/zh-hans/3.1/)
 [![docker_pulls](https://img.shields.io/docker/pulls/hhyo/archery.svg)](https://hub.docker.com/r/hhyo/archery/)
 [![HitCount](http://hits.dwyl.io/hhyo/hhyo/Archery.svg)](http://hits.dwyl.io/hhyo/hhyo/Archery)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](http://github.com/hhyo/archery/blob/master/LICENSE)
@@ -23,7 +23,7 @@
 
 介绍
 ============
-Archery是[archer](https://github.com/jly8866/archer)的分支项目，定位于SQL审核查询平台，旨在提升DBA的工作效率，支持主流数据库的SQL上线和查询，同时支持丰富的MySQL运维功能，所有功能都兼容手机端操作
+Archery是[archer](https://github.com/jly8866/archer)的分支项目，定位于SQL审核查询平台，旨在提升DBA的工作效率，支持多数据库的SQL上线和查询，同时支持丰富的MySQL运维功能，所有功能都兼容手机端操作
 
 功能清单
 ====
@@ -35,7 +35,7 @@ Archery是[archer](https://github.com/jly8866/archer)的分支项目，定位于
 | Redis | √ | × | √ | × | × | × | × | × | × | × |
 | PgSQL | √ | × | √ | × | × | × | × | × | × | × |
 | Oracle | √ | × | √ | ✔️ | × | × | × | × | × | × |
-| MongoDB | √ | × | × | × | × | × | × | × | × | × |
+| MongoDB | √ | √  | √  | × | × | × | × | × | × | × |
 
   
 
