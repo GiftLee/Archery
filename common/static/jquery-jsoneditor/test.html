@@ -1,0 +1,60 @@
+<link rel="stylesheet" type="text/css" href="jsoneditor.css"/>
+ 
+<div id="editor" class="json-editor"></div>
+<pre id="json"></pre>
+<script src="D:/Archery/common/static/jquery/jquery.min.js"></script>
+<script src="jquery.jsoneditor.js"></script>
+<script>
+    var json = {
+    "job": {
+        "setting": {
+            "speed": {
+                "byte": 1048576
+            },
+            "errorLimit": {
+                "record": 0,
+                "percentage": 0.02
+            }
+        },
+        "content": [
+            {
+                "reader": {
+                    "name": "rdbmsreader",
+                    "parameter": {
+                        "username": "xxx",
+                        "password": "xxx",
+                        "column": [
+                            "id",
+                            "name"
+                        ],
+                        "splitPk": "pk",
+                        "connection": [
+                            {
+                                "table": [
+                                    "table"
+                                ],
+                                "jdbcUrl": [
+                                    "jdbc:dm://ip:port/database"
+                                ]
+                            }
+                        ],
+                        "fetchSize": 1024,
+                        "where": "1 = 1"
+                    }
+                },
+                "writer": {
+                    "name": "streamwriter",
+                    "parameter": {
+                        "print": true
+                    }
+                }
+            }
+        ]
+    }
+};
+    $('#editor').jsonEditor(json, { change: function() {
+        $('#json').html(JSON.stringify(json));
+    } });
+	var editor = $("#json").val()
+	alert(editor)
+</script>
